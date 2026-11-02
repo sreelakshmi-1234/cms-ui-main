@@ -1,0 +1,42 @@
+name: Cogneta cms-ui Frontend Deploy
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  Deploy:
+    name: Deploy to Server
+    runs-on: ubuntu-latest
+    env:
+      NODE_OPTIONS: --max_old_space_size=4096
+    
+    steps:
+      # Checkout the code from the repository
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      # Install Node.js (ensure correct version)
+      - name: Setup Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '20' # Use appropriate Node.js version for your project
+
+      # Install dependencies and build the project
+      - name: Install dependencies and build
+        run: |
+          npm install
+          GENERATE_SOURCEMAP=false CI=false npm run build
+
+      # Copy the build folder to the server
+      - name: Copy build folder to server
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          port: ${{ secrets.SSH_PORT }}
+          # password: ${{ secrets.SSH_PASS }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "build/*"
+          target: "/var/www/html/cms-frontend/"
+
